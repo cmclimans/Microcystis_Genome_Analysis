@@ -17,12 +17,17 @@ This repository contains scripts and workflows required to perform genome analys
 
 	1b. Decontaminate with mdmclener  
 	- Install mdmcleaner via anaconda (https://github.com/KIT-IBG-5/mdmcleaner) or using  mdmcleaner.yml file  
-		- If not installed, run 'mdmcleaner makedb' to install databases  
+		- If not installed, run `mdmcleaner makedb` to install databases  
 		- specify output db directory with the -o option  
 	- This will take a while (~14 hours on a 100 mbps network, per developer)  
-	- 
+	- run `mdmcleaner clean -i FASTA_FILES -o OUTPUT_DIR -t THREADS --overview_files_basename RUN_NAME` --no_filterfasta True`  
+		- one output file per genome will be produced, we need the following files:  
+			- <genome-name>_keep.fasta which contains safe, uncontaminated contigs  
+			- <genome-name>_evaluate_low.fasta contains contigs which _may_ have contaminated reads  
+			- <genome-name>_evaluate_high.fasta contains contigs likely to be contaminated  
+			- <genome-name>_delete.fasta poor quality contigs likely with definete contamination which should be removed  
 
-	1c. QC Decontamination with QUAST
+	1c. QC Decontamination with QUAST  
 
 3. Pangenome analysis of genomes
 4. Phylogenetic inference
