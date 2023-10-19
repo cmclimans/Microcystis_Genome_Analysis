@@ -16,11 +16,11 @@ This repository contains scripts and workflows required to perform genome analys
 	- Rename fasta files, as needed, to a common format or scheme using rename_fasta.py script and rename .csv file.  
 
 	1b. Decontaminate with mdmclener  
-		* Install mdmcleaner via anaconda (https://github.com/KIT-IBG-5/mdmcleaner) or using  mdmcleaner.yml file  
-		* If not installed, run 'mdmcleaner makedb' to install databases  
-		** specify output db directory with the -o option  
-		** This will take a while (~14 hours on a 100 mbps network, per developer)  
-		* 
+	- Install mdmcleaner via anaconda (https://github.com/KIT-IBG-5/mdmcleaner) or using  mdmcleaner.yml file  
+		- If not installed, run 'mdmcleaner makedb' to install databases  
+		- specify output db directory with the -o option  
+	- This will take a while (~14 hours on a 100 mbps network, per developer)  
+	- 
 
 	1c. QC Decontamination with QUAST
 
