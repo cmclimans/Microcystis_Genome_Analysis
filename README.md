@@ -8,11 +8,11 @@
 This repository contains scripts and workflows required to perform genome analyses on _Microcystis_. 
 
 ## Project Goals
-1. Collate and QC _Microcystis_ genomes
-
-	1a. Collate Genomes
+1. Collate and QC _Microcystis_ genomes  
+	1a. Collate Genomes  
 
 	1b. Decontaminate with mdmclener  
+
 	1c. QC Decontamination with QUAST
 
 2. Pangenome analysis of genomes
