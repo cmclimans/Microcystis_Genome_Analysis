@@ -1,4 +1,4 @@
-![Bloom Image](IMG_0588.jpeg)
+![Bloom Image](IMG_0588.jpeg = 100x500)
 
 # Microcystis_Genome_Analysis  
 
