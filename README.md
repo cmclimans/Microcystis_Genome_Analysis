@@ -9,6 +9,7 @@ This repository contains scripts and workflows required to perform genome analys
 
 ## Project Goals
 1. Collate and QC _Microcystis_ genomes
+
 	1a. Collate Genomes
 	* Decontaminate with mdmclener
 	* QC Decontamination with QUAST
