@@ -1,4 +1,7 @@
+![Bloom Image](IMG_0588.jpeg)
+
 # Microcystis_Genome_Analysis  
+
 
 ## Project Description
 
