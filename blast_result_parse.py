@@ -3,12 +3,35 @@
 """
 Created on Thu Dec 14 07:49:32 2023
 
-@author: chris
+@author: Chris McLimans
+@author_email: cmclimans@ou.edu
+
+version = 0
+
+This script is intended to parse blastn results (blast fmt 6) to identify gene presence in genomes.
+This intends to check for complete gene sequences as well as full genes split around an assembly 
+due to fragmented assembly. 
+
+Currently this script is written to parse results for microcystin genes but will be developed
+to search for other genes as long as gene legnths are provided and match qseqid. 
+
+Goals:
+    - Write section to identify complete (single full length >90%) matches of query [X]
+    - Add section to confirm %ID of perfect match is acceptable [ ]
+    - Write section to evaluate query with 2+ matches within single genome that start w/in 5% of qstart &| qend [ ]
+        - Write section to check overlap and if split across multiple contigs [ ]
+    - Write section to evaluate how much query aligns to genome for 2+ hits that do not start near qstart | qend [ ]
+    - Convert to gene agnostic [ ]
+    - Modify into functions [ ]
+    - Convert to command line input [ ]
+        - adjustable %ID and qlength acceptable options [ ]
+    - Simplify repetitive sections and vectorize loops [ ]
+
 """
+
 
 import os
 import pandas as pd
-
 
 
 os.chdir('/Users/chris/Desktop/katG_workdir')
@@ -59,7 +82,10 @@ Genes = sorted(list(set(Results['qseqid'])))
 
 # Start initial df to report gene presence
 Result_df = pd.DataFrame(columns = Genes, index = genome_list)
-Perfect_matches = Results[abs(Results['Q_aligned'] - Results['Mcy_Length']) / Results['Mcy_Length'] <= 0.15]
+
+# Count single matches that are at least 90% of query gene length as complete matches
+## add in check for % ID
+Perfect_matches = Results[abs(Results['Q_aligned'] - Results['Mcy_Length']) / Results['Mcy_Length'] <= 0.1]
 Perfect_matches = Perfect_matches[['Genome', 'qseqid']]
 Pmatch_indicies = Perfect_matches.index.to_list()
 
@@ -127,8 +153,14 @@ for genome in genome_list:
             # if at least 75% present but perhaps fragmented
 
 
+
+
+
+
     
-# loop this for each genome in table
+"""
+Old Code
+
 
 
 # records = []
@@ -198,17 +230,8 @@ if len(tmp_gene) > 1:
             # Store first as the first record
                 
         
-        
-        
-        print('perfect combo')
-
-    
-    
-
-
-        
-            
-
     
 #Merged_keep.to_csv('parsed_results.csv', index=False)      
-        
+"""
+
+    
