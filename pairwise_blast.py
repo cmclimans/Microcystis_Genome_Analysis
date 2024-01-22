@@ -44,6 +44,9 @@ allStats = pd.DataFrame()
 genes = ['mcyA', 'mcyB', 'mcyC', 'mcyD', 'mcyE', 'mcyF', 'mcyG', 'mcyH', 'mcyI', 'mcyJ']
 
 for gene in genes:
+    
+    gene = 'mcyA'
+    Blast_results = pd.DataFrame()
     os.chdir('/Users/chris/Desktop/alignments/'+gene+'_align')
     all_seqs = SeqIO.index(gene+'_fixed.faa', 'fasta')
     
