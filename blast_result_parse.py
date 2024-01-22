@@ -34,7 +34,7 @@ import os
 import pandas as pd
 
 
-os.chdir('/Users/chris/Desktop/katG_workdir')
+os.chdir('/Users/chris/Desktop/all_mcy_blasts')
 mcy_lengths = pd.read_csv('/Users/chris/Desktop/Karin_Botrys/mcy_blasts/mcy_lengths.csv', names = ['qseqid', 'Mcy_Length'])
 
 
@@ -48,15 +48,16 @@ keep = ['Genome', 'qseqid', 'sseqid', 'pident', 'Q_aligned', 'qstart', 'qend',
 genome_list = []
 
 
-for file in os.listdir('all_out/'):
+for file in os.listdir('blast_all/'):
     if file.endswith('.txt'):
-        genome = file.replace('all_','')
-        genome = genome.replace('.fna.txt','')
+        genome = file.replace('out_','')
+        genome = genome.replace('.txt','')
         genome_list.append(genome)
-        results = pd.read_csv('all_out/'+file, sep = '\t', names = ['qseqid', 'sseqid', 'pident',
+        results = pd.read_csv('blast_all/'+file, sep = '\t', names = ['qseqid', 'sseqid', 'pident',
                                                          'length', 'mismatch', 'gapopen',
                                                          'qstart', 'qend', 'sstart', 'send',
                                                          'evalue', 'bitscore'])
+        
         
         results['Genome'] = genome
         results = pd.merge(results, mcy_lengths, on = 'qseqid')
@@ -66,14 +67,24 @@ for file in os.listdir('all_out/'):
         results['sstart'] = results['sstart'].astype(int)
         results['send'] = results['send'].astype(int)
         
+
+        
         
         results['Q_aligned'] =  (results['qend'] - results['qstart'])
         results.loc[results['qstart'] == 1, 'Q_aligned'] += 1
+        
+
                     
         
         results_keep = results[keep]
-        results_keep = results_keep.sort_values(['Genome', 'qseqid', 'sstart'], ascending = True)
-        #results_keep.to_csv('parsed/'+genome+'_parsed.csv', header = True, index = False)
+        results_keep = results_keep.sort_values(['Genome', 'qseqid', 'sstart'], ascending = True)  
+        
+        
+        results_keep['Q_perc'] = results_keep['Q_aligned']/results_keep['Mcy_Length']*100
+        
+        results_small = results_keep[['Genome', 'qseqid', 'Q_perc', 'pident', 'qstart', 'qend', 'Mcy_Length', 'sseqid']]
+        results_small.to_csv('blast_all_clean/out_'+genome+'.csv', index = False)
+
         
         Results = pd.concat([Results, results], ignore_index=True)
 
@@ -104,6 +115,7 @@ Results['sstart'] = Results['sstart'].astype(int)
 Results['send'] = Results['send'].astype(int)
 
 
+Result_df.to_csv('Perfect_Results.csv')
 
 
 # Check for partial matches due to genome fragmentation
