@@ -34,33 +34,48 @@ import os
 import pandas as pd
 
 
-os.chdir('/Users/chris/Desktop/all_mcy_blasts')
-mcy_lengths = pd.read_csv('/Users/chris/Desktop/Karin_Botrys/mcy_blasts/mcy_lengths.csv', names = ['qseqid', 'Mcy_Length'])
+os.chdir('/Users/chris/Desktop/prokka_dmnd')
+mcy_lengths = pd.read_csv('/Users/chris/Desktop/Karin_Botrys/mcy_blasts/mcy_lengths_protein.csv', names = ['qseqid', 'Mcy_Length'])
+mcy_lengths = mcy_lengths.rename(columns = {'qseqid': 'gene'})
 
 
 Results = pd.DataFrame(columns=['Genome', 'qseqid', 'sseqid', 'pident', 'length',
                                 'mismatch', 'gapopen', 'qstart', 'qend', 'sstart',
                                 'send', 'evalue', 'bitscore'])
 
+Results_30_30 = pd.DataFrame(columns=['Genome', 'qseqid', 'sseqid', 'pident', 'length',
+                                'mismatch', 'gapopen', 'qstart', 'qend', 'sstart',
+                                'send', 'evalue', 'bitscore'])
+
+
 keep = ['Genome', 'qseqid', 'sseqid', 'pident', 'Q_aligned', 'qstart', 'qend',
         'Mcy_Length', 'sstart', 'send']
 
 genome_list = []
 
-
-for file in os.listdir('blast_all/'):
+count=0
+for file in os.listdir('diamond_out/'):
     if file.endswith('.txt'):
-        genome = file.replace('out_','')
-        genome = genome.replace('.txt','')
+        print(file)
+        
+        blast_list = []
+        
+        genome = file.replace('_d_out.txt','')
         genome_list.append(genome)
-        results = pd.read_csv('blast_all/'+file, sep = '\t', names = ['qseqid', 'sseqid', 'pident',
+        results = pd.read_csv('diamond_out/'+file, sep = '\t', names = ['qseqid', 'sseqid', 'pident',
                                                          'length', 'mismatch', 'gapopen',
                                                          'qstart', 'qend', 'sstart', 'send',
                                                          'evalue', 'bitscore'])
         
         
         results['Genome'] = genome
-        results = pd.merge(results, mcy_lengths, on = 'qseqid')
+        gene_list = results['sseqid'].str.split('_', n=1, expand=True)
+        results['gene'] = gene_list[0]
+        
+        
+        
+        results = pd.merge(results, mcy_lengths, on = 'gene')
+        
         results['Mcy_Length'] = results['Mcy_Length'].astype(int)
         results['qend'] = results['qend'].astype(int)
         results['qstart'] = results['qstart'].astype(int)
@@ -76,18 +91,42 @@ for file in os.listdir('blast_all/'):
 
                     
         
-        results_keep = results[keep]
-        results_keep = results_keep.sort_values(['Genome', 'qseqid', 'sstart'], ascending = True)  
+        #results_keep = results[keep]
+        results = results.sort_values(['gene', 'qseqid', 'sstart'], ascending = True)  
         
         
-        results_keep['Q_perc'] = results_keep['Q_aligned']/results_keep['Mcy_Length']*100
+        results['Q_perc_MCY'] = results['Q_aligned']/results['Mcy_Length']*100
+        results_reorder = results[['Genome', 'gene', 'qseqid', 'sseqid', 'pident', 'Q_perc_MCY', 'Q_aligned', 'Mcy_Length',
+                                   'qstart', 'qend', 'sstart', 'send', 'evalue', 'bitscore', 'length', 'mismatch', 'gapopen']]
         
-        results_small = results_keep[['Genome', 'qseqid', 'Q_perc', 'pident', 'qstart', 'qend', 'Mcy_Length', 'sseqid']]
-        results_small.to_csv('blast_all_clean/out_'+genome+'.csv', index = False)
+        results_small = results[['Genome', 'gene', 'qseqid','pident', 'Q_perc_MCY', 'qstart', 'qend', 'Mcy_Length', 'sseqid']]
+
+        #results_reorder.to_csv('formatted_results/d_out_'+genome+'.csv', index = False)        
+        #results_small.to_csv('clean_results/d_out_'+genome+'.csv', index = False)
+        
+        
+        results_30_30 = results_reorder.loc[(results_reorder['pident'] >= 30.00) & (results_reorder['Q_perc_MCY'] >= 30.00)]
+        results_30_30.to_csv('30qcov_30pid/d_qcov30_pid30_'+genome+'.csv', index = False)
+ 
+        
+        # blast_30_30 = results_30_30.loc[(results_reorder['pident'] < 90.00) | (results_reorder['Q_perc_MCY'] < 90.00)]
+        # queries_to_blast = list(set(blast_30_30['qseqid']))
+        # blast_30_30.to_csv('blast_3030/d_less_qcov90_pid90_'+genome+'.csv', index = False)
+        
+        # with open('blast_3030/d_less_qcov90_pid90_IDs_'+genome+'.txt', 'w') as f:
+        #     for item in queries_to_blast:
+        #         f.write(item+'\n')
+                
+        non_mcy = results_30_30.loc[(results_reorder['pident'] < 90.00) & (results_reorder['Q_perc_MCY'] > 30.00)]
+        non_mcy.to_csv('non_mcy_hits/non_mcy_hits_'+genome+'.csv', index = False)
 
         
-        Results = pd.concat([Results, results], ignore_index=True)
 
+        
+ 
+        Results = pd.concat([Results, results_reorder], ignore_index=True)
+        
+        Results_30_30 = pd.concat([Results_30_30, results_30_30], ignore_index=True)
 
 Genes = sorted(list(set(Results['qseqid'])))
 
