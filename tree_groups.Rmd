@@ -1,0 +1,199 @@
+---
+title: "Check Marker Trees"
+author: "Christopher McLimans"
+email: "cmclimans@ou.edu"
+Date: "19Feb24"
+version: 0
+
+output: html_notebook
+---
+
+# Import functions and tree file
+```{r}
+library(treeio)
+library(ape)
+library(dplyr)
+library(ggplot2)
+library(caper)
+library(ggtree)
+
+
+```
+
+
+# Check Trees and get results
+```{r}
+
+Overall_Results = data.frame()
+for (file in list.files('~/Desktop/Trees/')){ #Start
+  print(file)
+  
+  # Initiate an empty df to store results of monophyly checks
+  Monophyly_result = data.frame(Group = c(), Monophyletic = c(), MRCA = c())
+  # MRCA_result = data.frame(Group = c(), MRCA = c())
+  
+  gene = sub('RAxML_bipartitionsBranchLabels\\.(.*?)_bootstrap_besttree_out', '\\1', paste0(file))
+  
+  tree = read.tree(paste0('~/Desktop/Trees/',paste0(file)))
+  tips = tree$tip.label
+  
+  groups = read.csv('~/Desktop/Marker_Groups.csv', header = FALSE, col.names = c("Genome", "Group"))
+  groups_filtered = groups[groups$Group != 'Single' & groups$Group != 'Outgroup',]
+  missing = list(setdiff(groups_filtered$Genome, tips))
+  
+  # Check if genomes are missing in the tree and if so remove from the 
+  # genomes/group records
+  if (length(missing) > 0){
+  new = strsplit(missing[[1]], "\t")
+  groups_filtered = groups_filtered[!(groups_filtered$Genome %in% new),]
+  number_missing = length(missing[[1]])
+  }
+  
+  # Split out the Genome names by group
+  grouped_data = split(groups_filtered$Genome, groups_filtered$Group)
+  
+  for (name in names(grouped_data)){
+    if (length(grouped_data[[name]]) > 1){
+      Monophyly_tmp = data.frame(Group = name, 
+                                 Monophyletic = (is.monophyletic(tree, grouped_data[[name]], reroot = FALSE)))
+      
+      MRCA = getMRCA(tree, grouped_data[[name]])
+      Group_members = clade.members(MRCA, tree, tip.labels = TRUE)}
+    
+    if (length(grouped_data[[name]]) != length(Group_members)){
+      Monophyly_tmp$MRCA_Check = FALSE
+    } else if (setequal(grouped_data[[name]], sort(Group_members)) == 'FALSE'){
+      Monophyly_tmp$MRCA_Check = FALSE
+    } else if (setequal(grouped_data[[name]], sort(Group_members)) == 'TRUE'){
+      Monophyly_tmp$MRCA_Check = TRUE}
+    
+    if (Monophyly_tmp$Monophyletic == FALSE | Monophyly_tmp$MRCA_Check == FALSE){
+      Monophyly_tmp$Monophyletic = FALSE
+    }
+                                
+    Monophyly_result = rbind(Monophyly_result, Monophyly_tmp)
+    
+    # MRCA_tmp = data.frame(Group = name, 
+    #                        MRCA = (getMRCA(tree, grouped_data[[name]])))
+    # MRCA_result = rbind(MRCA_result, MRCA_tmp)
+    # 
+    # clade.members(getMRCA(tree, grouped_data[[name]]), tree, tip.labels = TRUE)
+    # 
+    }
+
+
+  
+  
+  
+  # Overall counts of Monophyletic or not 
+  Overall_checks = as.data.frame(table(Monophyly_result$Monophyletic))
+  freq_false <- Overall_checks$Freq[Overall_checks$Var1 == 'FALSE']
+  freq_true <- Overall_checks$Freq[Overall_checks$Var1 == 'TRUE']
+  
+  
+  # Genospecies counts of Monophyletic or not 
+  Monophyly_result_geno = Monophyly_result %>% filter(grepl("[A-Za-z]", Group))
+  Overall_checks_geno = as.data.frame(table(Monophyly_result_geno$Monophyletic))
+  freq_false_geno <- Overall_checks_geno$Freq[Overall_checks_geno$Var1 == 'FALSE']
+  freq_true_geno <- Overall_checks_geno$Freq[Overall_checks_geno$Var1 == 'TRUE']
+  
+  
+  Overall_Results_tmp = data.frame(
+    Gene = gene,
+    N_total = 125,
+    N_missing = number_missing,
+    Perc_missing = round(number_missing/125*100,1),
+    N_groups = 26,
+    N_monophyletic = freq_true,
+    Perc_monophyletic = round(freq_true/26*100,1),
+    N_non_monophyletic = freq_false,
+    Perc_non_monophyletic = round(freq_false/26*100,1),
+    N_geno_monophyletic = freq_true_geno,
+    Perc_monophyletic_geno = round(freq_true_geno/16*100,1),
+    N_geno_non_monophyletic = freq_false_geno,
+    Perc_non_monophyletic_geno = round(freq_false_geno/16*100,1)
+  )
+  
+  Overall_Results = rbind(Overall_Results, Overall_Results_tmp)
+  
+  
+  Overall_Results$Group <- ifelse(Overall_Results$Gene %in% c('sbcC', 'glnA', 'helY', 'acrB', 'amtB'), 'HC', 'Kiledal')
+
+
+  } #End
+
+
+```
+
+
+# Bar Plots
+```{r}
+
+ggplot(Overall_Results, aes(x = Gene, y = N_missing))+
+  facet_wrap(~Group, scales = 'free_x') +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  labs(y = 'Missing Sequences') +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+
+ggplot(Overall_Results, aes(x = Gene, y = Perc_missing))+
+  facet_wrap(~Group, scales = 'free_x') +
+  geom_bar(stat = 'identity') +
+  theme_bw() +
+  labs(y = 'Percent Missing Seqs')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+
+
+ggplot(Overall_Results, aes(x = Gene, y = N_monophyletic))+
+  facet_wrap(~Group, scales = 'free_x') +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Number Monophyletic (Overall of 25)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+ggplot(Overall_Results, aes(x = Gene, y = Perc_monophyletic))+
+  facet_wrap(~Group, scales = 'free_x') +
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Percent Monophyletic (of 25)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+
+
+ggplot(Overall_Results, aes(x = Gene, y = N_non_monophyletic))+
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Number Not Monophyletic (Overall of 25)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+ggplot(Overall_Results, aes(x = Gene, y = Perc_non_monophyletic))+
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Percent Not Monophyletic (of 25)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+
+ggplot(Overall_Results, aes(x = Gene, y = N_geno_monophyletic))+
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Number Genospecies Monophyletic (Overall of 16)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+ggplot(Overall_Results, aes(x = Gene, y = Perc_monophyletic_geno))+
+  geom_bar(stat = 'identity', position = 'dodge') +
+  theme_bw() +
+  labs(y = 'Percent Genospecies Monophyletic (of 16)')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, face = 'italic'))
+
+
+
+```
+
+
+
+
+
+
+
